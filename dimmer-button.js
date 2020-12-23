@@ -1,116 +1,245 @@
 //TODO
-//Add area on <p bottom> when supported
-//Sync % with input value
-//Improve text positioning on small cards
-//Select brightness, white_value or color
-//Long press action
-//Add support for media_players and sensors
+//Add automatic area on <p bottom> when supported
+//value template support
+//Scale text when card is smaller than ~200px
+//Select mode color
+//Keep displaying newValue until the old value is updated
 import {
     LitElement,
     html,
     css
 } from "https://unpkg.com/lit-element@2.0.1/lit-element.js?module";
-var tap = false;
-const delta = 3;
-let startX;
-let startY;
+
 class DimmerButton extends LitElement {
   
   static get properties() {
     return {
       hass: {},
-      config: {},
-      active: {}
+      config: {}
     };
   }
 
   static getStubConfig() {
-    return { entity: "",name: "",background: "#202125",foreground: "#423C2E",icon: "",on_icon: "hass:lightbulb",off_icon: "hass:lightbulb-outline",on_color: "#FED664",off_color: "#DEDFE1" }
+    return { entity: '#Required',name: '#friendly_name',mode: '#supports "brightness" or "color_temp" for light and "volume" for media_player', bottom: "#optional text under name", height: "",background: "",foreground: "",icon: "",on_icon: "",off_icon: "",on_color: "",off_color: "" }
     }
 
   constructor() {
     super();
+    this.hold = false;
+    this.dim = false;
+    this.disabled = false;
+    this.delta = 3;
+    this.startY;
+    this.startX;
+    this.clientY;
+    this.mode;
+    this.iconOn;
+    this.iconOff;
+    this.displayState;
+    this.rangeMax = 100;
+    this.rangeValue = 0;
+    this.maxVol;
+    this.newValue = 0;
+    this.longPress = null;
+  }
+
+  entityConfig(entity) {
+    if(entity.entity_id.includes("light.")||entity.entity_id.includes("switch.")) {
+      this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : entity.entity_id.includes("light.") ? "hass:lightbulb" : "mdi:toggle-switch";
+      this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : entity.entity_id.includes("light.") ? "hass:lightbulb-outline" : "mdi:toggle-switch-off-outline";
+      if(entity.attributes.supported_features & 1) {
+        if(entity.attributes.supported_features & 2 && this.config.mode == "color_temp"){
+          this.mode = "color_temp";
+          this.displayState = entity.state === "on" ? ('• '+(this.newValue != 0 ? Math.round(1000000/(((entity.attributes.max_mireds-entity.attributes.min_mireds)*(this.newValue/100))+entity.attributes.min_mireds))+' K' : Math.round((1000000/(entity.attributes.color_temp)))+' K')) : '';
+          this.rangeValue = entity.state === "on" ? Math.round(((entity.attributes.color_temp-entity.attributes.min_mireds)*100)/(entity.attributes.max_mireds-entity.attributes.min_mireds)) : 0;
+        }else{
+          this.mode = "brightness";
+          this.displayState = '• '+(this.newValue != 0 ? this.newValue : (entity.state === "on" ? Math.round(entity.attributes.brightness/2.55) : 0))+'%';
+          this.rangeValue = entity.state === "on" ? Math.round(entity.attributes.brightness/2.55) : 0;
+        }
+      }else{
+        this.mode = "toggle";
+        this.displayState = '';
+        this.rangeMax = 1;
+        this.rangeValue = entity.state === "on" ? 1 : 0;
+      }
+    }else if(entity.entity_id.includes("sensor.")){
+      this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:eye";
+      this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:eye";
+      this.mode = "static";
+      this.displayState = entity.attributes.unit_of_measurement ? entity.attributes.unit_of_measurement: '';
+      this.disabled = true;
+      this.rangeMax = 0;
+    }else if(entity.entity_id.includes("media_player.")){
+      this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:cast";
+      this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:cast";
+      if(entity.attributes.supported_features & 4 && this.config.mode == "volume") {
+        this.mode = "volume";
+        this.displayState = (entity.state === "playing" ? '• '+(this.newValue != 0 ? this.newValue : (entity.attributes.volume_level*100))+'%' : '');
+        this.rangeMax = this.maxVol;
+        this.rangeValue = (entity.attributes.volume_level*100);
+      }else{
+        this.mode = "pause";
+        this.displayState = '';
+        this.rangeMax = 1;
+        this.rangeValue = entity.state === "on" ? 1 : 0;
+      }
+    }else{
+      this.mode = "static";
+    }
   }
 
   render() {
-    var entity = this.config.entity;
-    var entityStates = this.hass.states[entity]
-    var background = this.config.background ? this.config.background : "var(--ha-card-background)";
-    var foreground = this.config.foreground ? this.config.foreground : "var(--primary-color)";
-    var name = this.config.name ? this.config.name : entityStates.attributes.friendly_name;
-    var onColor = this.config.on_color ? this.config.on_color : "#fdd835";
-    var offColor = this.config.off_color ? this.config.off_color : "gray";
-    if (this.config.icon) {
-      var iconOn = this.config.icon;
-      var iconOff = this.config.icon; 
-    }else{
-      var iconOn = this.config.on_icon ? this.config.on_icon : "hass:lightbulb";
-      var iconOff = this.config.off_icon ? this.config.off_icon : "hass:lightbulb-outline";
-    }
-    if (entityStates.attributes.supported_features !=0 && entityStates.attributes.supported_features !== undefined) {
-      return html`
-        <ha-card>
-          <div class="button" style="--dimmer-background:${background};--dimmer-foreground:${foreground};--color-on:${onColor};--color-off:${offColor};">
-            <p class="info top ${entityStates.state}"><ha-icon class="icon" icon=${entityStates.state === "on" ? iconOn : iconOff}></ha-icon>${entityStates.state} • ${entityStates.state === "on" ? Math.round(entityStates.attributes.brightness/2.55) : 0 }%</p>
-            <p class="info middle">${name}</p>
-            <input type="range" class="${entityStates.state}" .value="${entityStates.state === "on" ? Math.round(entityStates.attributes.brightness/2.55) : 0 }" 
-              @touchstart=${e => this._startCords(e.changedTouches[0])}
-              @touchend=${e => this._endCords(entityStates, e.changedTouches[0])}
-              @mousedown=${e => this._startCords(e)}
-              @mouseup=${e => this._endCords(entityStates, e)} 
-              @change=${e => this._setBrightness(entityStates, e.target.value)}>
-          </div>
-        </ha-card>
-      `;
-    }else{
-      return html`
-        <ha-card>
-          <div class="button" style="--dimmer-background:${background};--dimmer-foreground:${foreground};--color-on:${onColor};--color-off:${offColor};">
-            <p class="top ${entityStates.state}"><ha-icon class="icon ${entityStates.state}" icon=${entityStates.state === "off" ? iconOff : iconOn}></ha-icon>${entityStates.state}</p>
-            <p class="middle">${name}</p>
-            <input type="range" min="0" max="1" class="${entityStates.state}" .value="${entityStates.state === "on" ? 1 : 0}" 
-              @touchstart=${e => this._startCords(e.changedTouches[0])}
-              @touchend=${e => this._endCords(entityStates, e.changedTouches[0])}
-              @mousedown=${e => this._startCords(e)}
-              @mouseup=${e => this._endCords(entityStates, e)} 
-              @change=${e => this._setBrightness(entityStates, e.target.value)}>
-          </div>
-        </ha-card>
-        `;
-    }
+    const entity = this.config.entity;
+    const entityStates = this.hass.states[entity]
+    let background = this.config.background ? this.config.background : "var(--ha-card-background)";
+    let foreground = this.config.foreground ? this.config.foreground : "var(--primary-color)";
+    const name = this.config.name ? this.config.name : entityStates.attributes.friendly_name;
+    const onColor = this.config.on_color ? this.config.on_color : "#fdd835";
+    const offColor = this.config.off_color ? this.config.off_color : "gray";
+    const cardHeight = this.config.height ? this.config.height : "150px";
+    const bottomText = this.config.bottom;
+    this.entityConfig(entityStates);
+    return html`
+      <ha-card>
+        <div class="button" style="${this.mode == "static" ? (entityStates.state == "on" ? "--dimmer-background:"+foreground : "--dimmer-background:"+background) : "--dimmer-background:"+background};--dimmer-foreground:${foreground};--color-on:${onColor};--color-off:${offColor};--card-height:${cardHeight};">
+          <p class="top ${entityStates.state}"><ha-icon class="icon" icon=${entityStates.state === "off" ? this.iconOff : this.iconOn}></ha-icon>${entityStates.state} ${this.displayState}</p>
+          <p class="middle">${name}</p>
+          ${bottomText ? html`<p class="bottom">${bottomText}</p>`: ''}
+          <input type="range" ?disabled="${this.disabled}" min="0" max="${this.rangeMax}" class="${entityStates.state}" .value="${this.rangeValue}" 
+            @pointerdown=${e => this._startCords(entity, e)}
+            @pointerup=${e => this._endCords(entityStates, e)}
+            @pointermove=${e => this._moveHandler(e)}
+            @change=${e => this._setValue(entityStates, e)}
+            @input=${e => this._displayValue(e.target.value)}
+            >
+        </div>
+      </ha-card>
+    `;
   }
 
-  updated() {}
+  _moveHandler(e) {
+    let diffX = Math.abs(this.startX-e.pageX);
+    let diffY = Math.abs(this.startY-e.pageY);
+    let posDelta = 6;
+    if(diffX > posDelta || diffY > posDelta){
+    	clearTimeout(this.longPress);
+    };
+  }
 
-  _startCords(e) {
-      startX = e.pageX;
-      startY = e.pageY;
+  _displayValue(e) {
+    this.newValue = parseInt(e);
+    this.requestUpdate();
+  }
+
+  _startCords(entity, e) {
+      this.startX = e.pageX;
+      this.startY = e.pageY;
+      this.clientY = e.clientY;
+      let target = e.target.parentElement;
+      this.longPress = setTimeout(() => this._moreInfo('hass-more-info', { entityId: this.config.entity }, target), 600);
     }
 
   _endCords(entity, e) {
-    const diffX = Math.abs(e.pageX - startX);
-    const diffY = Math.abs(e.pageY - startY);
-    if (diffX < delta && diffY < delta) {
-      tap = true;
-      this.hass.callService("homeassistant", "toggle", {
-        entity_id: entity.entity_id    
-      });
+    clearTimeout(this.longPress);
+    this.newValue = 0;
+    let diffX = Math.abs(e.pageX - this.startX);
+    let diffY = Math.abs(e.pageY - this.startY);
+    let scrollY = Math.abs(e.clientY - this.clientY);
+    if(this.hold){
+    	this.hold = false;
+    	return false;
+    };
+    if((diffX < this.delta && diffY < this.delta)&&(e.button == 0 || e.button == undefined)){
+        this.dim = false;
+        this._toggle(entity);
     }else{
-      tap = false;
-      }
-  }
-
-  _setBrightness(entity, value) {
-    if(!tap){
-      this.hass.callService("homeassistant", "turn_on", {
-          entity_id: entity.entity_id,
-          brightness: value * 2.55
-      });
+    	this.dim = true;
+    };
+    if(scrollY > 50){
+      this.dim = false;
     }
   }
 
-  _navigate(path) {
-      window.location.href = path;
+  _moreInfo(entity, detail, e){
+    navigator.vibrate(100);
+    let flash = document.createElement("span");
+    flash.classList.add("effect");
+    const old = e.getElementsByClassName("effect")[0];
+    if (old) {
+      old.remove();
+    }
+    e.appendChild(flash);
+    this.hold = true;
+    event = new Event(entity, {
+      bubbles: true,
+      cancelable: false,
+      composed: true
+    });
+    event.detail = detail || {};
+    this.shadowRoot.dispatchEvent(event);
+    return event;
+  }
+
+  _toggle(entity){
+    switch(this.mode){
+      case "color_temp":
+      case "brightness":
+      case "toggle":
+        this.hass.callService("homeassistant", "toggle", {
+          entity_id: entity.entity_id    
+        });
+        break;
+      case "volume":
+      case "pause":
+        this.hass.callService("media_player", "media_play_pause", {
+          entity_id: entity.entity_id    
+        });
+        break;
+      }
+    }
+
+  _setValue(entity, e) {
+    let value = e.target.value;
+    let num = 0;
+    if(this.dim){
+      switch(this.mode){
+      	case "brightness":
+      		this.hass.callService("homeassistant", "turn_on", {
+	            entity_id: entity.entity_id,
+	            brightness: value * 2.55
+	        });
+      		break;
+      	case "color_temp":
+      		num = Math.round(((entity.attributes.max_mireds-entity.attributes.min_mireds)*(value/100))+entity.attributes.min_mireds);
+      		this.hass.callService("light", "turn_on", {
+      		    entity_id: entity.entity_id,
+      		    color_temp: num
+      		});
+      		break;
+      	case "volume":
+      		this.maxVol = this.config.max_volume ? this.config.max_volume : 100;
+      		num = this.maxVol>value ? (value/100) : (this.maxVol/100);
+      		this.hass.callService("media_player", "volume_set", {
+      		  entity_id: entity.entity_id,    
+      		  volume_level: num
+      		});
+      		break;
+      	case "pause":
+      		this._pause(entity);
+      		break;
+      	case "toggle":
+      		this._toggle(entity);
+      		break;
+      }
+    }else{
+    	e.target.value = this.rangeValue;
+    	this.newValue = 0;
+    	this.dim = false;
+    	this.requestUpdate();
+    	return false;
+    }
+    this.dim = false;
   }
   
   setConfig(config) {
@@ -134,10 +263,10 @@ class DimmerButton extends LitElement {
           margin: 0;
         }
 
-        p.off {
+        p.off, p.paused, p.unavailable {
           color: var(--color-off);
         }
-        p.on {
+        p.on, p.playing {
           color: var(--color-on);
         }
 
@@ -154,12 +283,22 @@ class DimmerButton extends LitElement {
         .middle {
           font-size: var(--paper-font-title_-_font-size);
           font-weight: var(--paper-font-title_-_font-weight);
-          padding: 25px 35px;
+          padding: 20px 0 5px 35px;
+        }
+
+        .bottom {
+          font-size: var(--paper-font-body1_-_font-size);
+          font-weight: var(--paper-font-body1_-_font-weight);
+          padding: 5px 0 0 35px;
         }
 
         .button {
-          height: 150px;
+          height: var(--card-height);
           position: relative;
+          background: var(--dimmer-background);
+          background-size: cover;
+          border-radius: var(--ha-card-border-radius);
+          touch-action: pan-y;
         }
 
         .button input[type="range"] {
@@ -170,7 +309,7 @@ class DimmerButton extends LitElement {
           overflow: hidden;
           height: 100%;
           -webkit-appearance: none;
-          background-color: var(--dimmer-background);
+          background: none;
           position: absolute;
           top: 0;
           right: 0;
@@ -182,7 +321,7 @@ class DimmerButton extends LitElement {
         }
 
         .button input[type="range"]::-webkit-slider-thumb {
-          width: 1px;
+          width: 0;
           -webkit-appearance: none;
           box-shadow: -9999px 0 0 9999px var(--dimmer-foreground);
         }
@@ -207,6 +346,24 @@ class DimmerButton extends LitElement {
 
         .button input[type="range"]:hover {
           cursor: pointer;
+        }
+        span.effect {
+          position: absolute;
+          opacity: 0;
+          animation: ripple 200ms ease-in-out;
+          background-color: rgba(255, 255, 255, 0.9);
+          height: 100%;
+          width: 100%;
+          left: 0;
+          top: 0;
+          border-radius: var(--ha-card-border-radius);
+          pointer-events: none;
+        }
+
+        @keyframes ripple {
+          to {
+            opacity: 1;
+          }
         }
     `;
   }  
