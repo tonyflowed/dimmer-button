@@ -226,8 +226,6 @@ class DimmerButton extends LitElement {
       		});
       		break;
       	case "pause":
-      		this._pause(entity);
-      		break;
       	case "toggle":
       		this._toggle(entity);
       		break;
