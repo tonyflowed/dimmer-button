@@ -75,7 +75,7 @@ class DimmerButton extends LitElement {
       this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:cast";
       if(entity.attributes.supported_features & 4 && this.config.mode == "volume") {
         this.mode = "volume";
-        this.displayState = (entity.state === "playing" ? '• '+(this.newValue != 0 ? this.newValue : (entity.attributes.volume_level*100))+'%' : '');
+        this.displayState = (entity.state === "playing" ? '• '+(this.newValue != 0 ? this.newValue : Math.round((entity.attributes.volume_level*100)))+'%' : '');
         this.rangeMax = this.maxVol;
         this.rangeValue = (entity.attributes.volume_level*100);
       }else{
