@@ -1,7 +1,7 @@
 # Dimmer buttons
 These are dimmable buttons for home assistant inspired by Android 11's quick access device controls, designed primarily for compact and easy control of lights and switches on touch screen devices.
 
-![](ezgif-6-55f26efb9269.gif)
+![](preview.jpg)
 
 The buttons support turning on/off as well as dimming, one tap toggles the device and sliding over the button sets the brightness. For devices without support for setting the brightness, both sliding and tapping toggles the device on or off.
 
