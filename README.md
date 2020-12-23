@@ -23,8 +23,11 @@ Most parts of the card can be changed in the configuration.
 | Name       | Type   | Default                    | Description                                                               |
 |------------|--------|----------------------------|---------------------------------------------------------------------------|
 | `type`       | string | **Required**             | `custom:dimmer-button`                                                    |
-| `entity`     | string | **Required**             | Any entity is accepted but currently works best with lights and switches. |
+| `entity`     | string | **Required**             | Any entity is accepted |
 | `name`       | string | `friendly_name`          | Use to set a custom name                                                  |
+| `mode`       | string |                          | Select mode for the entity, 'brightness' or 'color_temp' for lights and 'volume' for media players|
+| `bottom`     | string |                          | Display optional text under name                                          |
+| `height`     | number | `150`                    | Specify height of card                                                    |
 | `background` | string | `--ha-card-background`   | Set the background of the button                                          |
 | `foreground` | string | `--primary-color`        | Set the foreground of the button                                          |
 | `on_color`   | string | `#fdd835`                | Set the color of the top row when on                                      |
