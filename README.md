@@ -34,6 +34,6 @@ Most parts of the card can be changed in the configuration.
 | `foreground` | string | `--primary-color`        | Set the foreground of the button                                          |
 | `on_color`   | string | `#fdd835`                | Set the color of the top row when on                                      |
 | `off_color`  | string | `gray`                   | Set the color of the top row when off                                     |
-| `on_icon`    | string | `hass:lightbulb`         | Set the icon to display when on                                           |
-| `off_icon`   | string | `hass:lightbulb-outline` | Set the icon to display when off                                          |
-| `icon`       | string |                          | Use to set the same icon for on and off(Override)                         |
+| `on_icon`    | string | `entity icon if defined, otherwise depending on type`         | Set the icon to display when on                                           |
+| `off_icon`   | string | `entity icon if defined, otherwise depending on type` | Set the icon to display when off                                          |
+| `icon`       | string |                          | Use to set the same icon for on and off(Overrides setting on/off individually)                         |
