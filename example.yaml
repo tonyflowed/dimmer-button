@@ -1,0 +1,157 @@
+views:
+  - title: Dimmer button demo
+    path: dimmer-button
+    panel: false
+    cards:
+      - type: 'custom:dimmer-button'
+        entity: light.light1
+        background: url(/local/Blue-Agave-v3.gif)
+        name: Light
+        foreground: 'rgba(34,193,195, 0.5) ;'
+        on_color: black
+        off_color: green
+        on_icon: 'mdi:account'
+        off_icon: 'mdi:air-horn'
+        icon: 'mdi:alien'
+        bottom: 'tap to toggle, slide to dim, hold to bring up more info'
+      - type: 'custom:dimmer-button'
+        entity: light.light1
+        name: Light
+        background: url(/local/drop1.gif)
+        foreground: 'rgba(0, 185, 227, 0.6)'
+        on_color: '#27282A'
+        off_color: '#DEDFE1'
+        mode: color_temp
+        bottom: choose to control brightness or color temperature
+      - type: 'custom:dimmer-button'
+        entity: light.light2
+        name: ''
+        background: 'rgba(99,199,99,0.4)'
+        foreground: '#423C2Ecc'
+        on_icon: 'hass:lightbulb'
+        off_icon: 'hass:lightbulb-outline'
+        on_color: '#FED664'
+        off_color: '#DEDFE1'
+        bottom: background color
+      - type: 'custom:dimmer-button'
+        entity: light.light2
+        background: url(/local/snow.jpg)
+        foreground: 'rgba(34,191,19, 0.5) ;'
+        on_color: purple
+        off_color: green
+        icon: 'mdi:thermometer'
+        mode: color_temp
+        bottom: Color temperature
+      - type: 'custom:dimmer-button'
+        entity: light.group1
+        name: Bedroom group
+        background: 'linear-gradient(0deg,rgba(18,156,26,0.9),rgba(249,249,118,0.9))'
+        foreground: 'rgba(29,29,118,0.5)'
+        on_color: '#FED664'
+        off_color: '#DEDFE1'
+        mode: volume
+        max_volume: 25
+        bottom: gradient backgrounds
+      - type: 'custom:dimmer-button'
+        entity: light.light1
+        background: url(/local/snow.jpg)
+        foreground: 'rgba(100, 75, 227, 0.6)'
+        icon: 'mdi:weather-sunny'
+        on_color: '#27282A'
+        off_color: '#DEDFE1'
+        bottom: brightness
+      - type: 'custom:dimmer-button'
+        entity: sensor.weather_forecast_forecast_condition
+        name: Weather
+        background: url(/local/drop1.gif)
+        icon: 'mdi:cloud'
+        foreground: '#423C2E'
+        off_color: white
+        bottom: background image
+      - type: 'custom:dimmer-button'
+        entity: light.light1
+        foreground: 'rgba(14, 18, 167, 0.7)'
+        on_color: pink
+        off_color: '#DEDFE1'
+        bottom: specify height
+        height: 250px
+      - type: horizontal-stack
+        cards:
+          - type: 'custom:dimmer-button'
+            entity: binary_sensor.kitchen_tablet_motion
+            name: Kitchen motion
+            foreground: 'rgba(22, 122, 222, 0.3)'
+            icon: 'mdi:cctv'
+            on_color: '#D02561'
+            off_color: '#D02561'
+            bottom: show Binary_sensors
+          - type: 'custom:dimmer-button'
+            entity: light.light3
+            background: gray
+            foreground: salmon
+            direction: vertical
+            bottom: vertical slider
+      - type: 'custom:dimmer-button'
+        entity: media_player.google_home
+        name: media player
+        bottom: 'tap to play/pause, optionally set volume by sliding'
+        icon: 'mdi:google-home'
+        on_color: '#FED664'
+      - type: 'custom:dimmer-button'
+        entity: media_player.spotify
+        name: Spotfiy
+        foreground: 'rgba(104, 148, 67, 0.7)'
+        on_color: '#111'
+        off_color: '#DEDFE1'
+        mode: volume
+        bottom: control volume on media_players
+      - type: 'custom:dimmer-button'
+        entity: light.light3
+        foreground: 'rgba(14, 18, 167, 0.7)'
+        on_color: pink
+        off_color: '#DEDFE1'
+        height: 50px
+      - type: 'custom:dimmer-button'
+        entity: media_player.bedroom
+        background: url(/local/tokyo2.jpg) center
+        foreground: 'rgba(104, 148, 67, 0.7)'
+        on_color: '#FED664'
+        off_color: '#DEDFE1'
+        icon: 'mdi:google-home'
+        mode: volume
+        max_volume: 20
+        bottom: limit with max_volume
+      - type: 'custom:dimmer-button'
+        entity: sensor.temperature
+        name: Temperature
+        on_color: '#111'
+        background: url(/local/wave.png)
+        foreground: '#423C2E'
+        bottom: show sensors
+      - type: 'custom:dimmer-button'
+        entity: switch.coffee
+        name: Coffee maker
+        background: black
+        foreground: '#423C2E'
+        off_color: white
+        bottom: control Switches
+      - type: horizontal-stack
+        title: Horizontal stack
+        cards:
+          - type: 'custom:dimmer-button'
+            entity: sensor.pixel_2_xl_ringer_mode
+            foreground: 'rgba(22, 122, 222, 0.3)'
+            on_color: '#D02561'
+            off_color: '#D02561'
+          - type: 'custom:dimmer-button'
+            entity: binary_sensor.pixel_2_xl_is_charging
+            background: gray
+            foreground: '#81A2F3'
+            on_color: pink
+            off_color: '#DEDFE1'
+          - type: 'custom:dimmer-button'
+            entity: sensor.pixel_2_xl_battery_level
+            background: gray
+            foreground: '#81A2F3'
+            on_color: pink
+            off_color: '#DEDFE1'
