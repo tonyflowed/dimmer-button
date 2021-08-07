@@ -2,13 +2,16 @@
 //Add automatic area on <p bottom> when supported
 //value template support
 //Select mode color
+//iOS fix?
+//Dynamic backgrounds
+//Group color options in config
 import {
     LitElement,
     html,
     css
 } from "https://unpkg.com/lit-element@2.0.1/lit-element.js?module";
 
-console.info('%c DIMMER-BUTTON %c 0.3 ','color: antiquewhite; background: #B565C6;','color: salmon; background: gray;');
+console.info('%c DIMMER-BUTTON %c 0.4 ','color: antiquewhite; background: #B565C6;','color: salmon; background: gray;');
 
 class DimmerButton extends LitElement {
   
@@ -20,7 +23,7 @@ class DimmerButton extends LitElement {
   }
 
   static getStubConfig() {
-    return { entity: '#Required',name: '#friendly_name',mode: '#supports "brightness" or "color_temp" for light and "volume" for media_player', direction: "horizontal", bottom: "#optional text under name", height: "",background: "",foreground: "",icon: "",on_icon: "",off_icon: "",on_color: "",off_color: "" }
+    return { entity: '#Required',name: '#friendly_name',mode: '#supports "brightness" or "color_temp" for light and "volume" for media_player', direction: "horizontal", bottom: "#optional text under name", height: "",background: "",foreground: "",icon: "",on_icon: "",off_icon: "",on_color: "",off_color: "", text_color: "" }
     }
 
   constructor() {
@@ -51,23 +54,21 @@ class DimmerButton extends LitElement {
     if(entity.entity_id.includes("light.")||entity.entity_id.includes("switch.")) {
       this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : entity.entity_id.includes("light.") ? "hass:lightbulb" : "mdi:toggle-switch";
       this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : entity.entity_id.includes("light.") ? "hass:lightbulb-outline" : "mdi:toggle-switch-off-outline";
-      if(entity.attributes.supported_features & 1) {
-        if(entity.attributes.supported_features & 2 && this.config.mode == "color_temp"){
-          this.mode = "color_temp";
-          this.displayState = entity.state === "on" ? ('• '+(this.newValue != 0 ? Math.round(1000000/(((entity.attributes.max_mireds-entity.attributes.min_mireds)*(this.newValue/100))+entity.attributes.min_mireds))+' K' : Math.round((1000000/(entity.attributes.color_temp)))+' K')) : '';
-          this.rangeValue = entity.state === "on" ? Math.round(((entity.attributes.color_temp-entity.attributes.min_mireds)*100)/(entity.attributes.max_mireds-entity.attributes.min_mireds)) : 0;
-        }else{
-          this.mode = "brightness";
-          this.displayState = '• '+(this.newValue != 0 ? this.newValue : (entity.state === "on" ? Math.round(entity.attributes.brightness/2.55) : 0))+'%';
-          this.rangeValue = entity.state === "on" ? Math.round(entity.attributes.brightness/2.55) : 0;
-        }
+      if(this.config.mode == "color_temp"){
+        this.mode = "color_temp";
+        this.displayState = entity.state === "on" && entity.attributes.color_temp ? ('• '+(this.newValue != 0 ? Math.round(1000000/(((entity.attributes.max_mireds-entity.attributes.min_mireds)*(this.newValue/100))+entity.attributes.min_mireds))+' K' : Math.round((1000000/(entity.attributes.color_temp)))+' K')) : '';
+        this.rangeValue = entity.state === "on" ? Math.round(((entity.attributes.color_temp-entity.attributes.min_mireds)*100)/(entity.attributes.max_mireds-entity.attributes.min_mireds)) : 0;
+      }else if(this.config.mode == "brightness"){
+        this.mode = "brightness";
+        this.displayState = '• '+(this.newValue != 0 ? this.newValue : (entity.state === "on" && entity.attributes.brightness ? Math.round(entity.attributes.brightness/2.55) : 0))+'%';
+        this.rangeValue = entity.state === "on" ? Math.round(entity.attributes.brightness/2.55) : 0;
       }else{
         this.mode = "toggle";
         this.displayState = '';
         this.rangeMax = 1;
         this.rangeValue = entity.state === "on" ? 1 : 0;
       }
-    }else if(entity.entity_id.includes("sensor.")){
+    }else if(entity.entity_id.includes("sensor.")||entity.entity_id.includes("device_tracker.")){
       this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:eye";
       this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:eye";
       this.mode = "static";
@@ -76,9 +77,11 @@ class DimmerButton extends LitElement {
     }else if(entity.entity_id.includes("media_player.")){
       this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:cast";
       this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:cast";
-      if(entity.attributes.supported_features & 4 && this.config.mode == "volume") {
+      this.rangeMax = 1;
+      this.rangeValue = entity.state === "on" ? 1 : 0;
+      if(this.config.mode == "volume") {
         this.mode = "volume";
-        this.displayState = (entity.state === "playing" ? '• '+(this.newValue != 0 ? this.newValue : Math.round((entity.attributes.volume_level*100)))+'%' : '');
+        this.displayState = (entity.state === "playing" && entity.attributes.volume_level ? '• '+(this.newValue != 0 ? this.newValue : Math.round((entity.attributes.volume_level*100)))+'%' : '');
         this.maxVol = this.config.max_volume ? this.config.max_volume : 100;
         this.rangeMax = this.maxVol;
         this.rangeValue = (entity.attributes.volume_level*100);
@@ -90,6 +93,8 @@ class DimmerButton extends LitElement {
       }
     }else{
       this.mode = "static";
+      this.iconOn = this.config.icon ? this.config.icon : this.config.on_icon ? this.config.on_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:help-circle";
+      this.iconOff = this.config.icon ? this.config.icon : this.config.off_icon ? this.config.off_icon : entity.attributes.icon ? entity.attributes.icon : "mdi:help-circle-outline";
     }
   }
 
@@ -97,6 +102,7 @@ class DimmerButton extends LitElement {
     const entity = this.config.entity;
     const entityStates = this.hass.states[entity]
     const name = this.config.name ? this.config.name : entityStates.attributes.friendly_name;
+    const textColor = this.config.text_color ? this.config.text_color : "var(--primary-text-color)";
     const onColor = this.config.on_color ? this.config.on_color : "#fdd835";
     const offColor = this.config.off_color ? this.config.off_color : "gray";
     const cardHeight = this.config.height ? this.config.height : "150px";
@@ -111,8 +117,9 @@ class DimmerButton extends LitElement {
     return html`
       <ha-card>
         <div class="button ${this.active}" style="
-        ${this.mode == "static" ? (entityStates.state == "on" ? "--dimmer-background:"+foreground : "--dimmer-background:"+background) : "--dimmer-background:"+background};
+        ${this.mode == "static" ? (entityStates.state == "on" || entityStates.state == "home" ? "--dimmer-background:"+foreground : "--dimmer-background:"+background) : "--dimmer-background:"+background};
         --dimmer-foreground:${foreground};
+        --color-text:${textColor};
         --color-on:${onColor};
         --color-off:${offColor};
         --card-height:${cardHeight};
@@ -121,11 +128,11 @@ class DimmerButton extends LitElement {
         ${this.vertical ? "--range-width:"+cardHeight+"; --range-height:500px; --right:500px; --touch: none" : "--range-width: 100%; --range-height:100%; --right:0; --touch: pan-y;" };"
         >
           <div class="text">
-          <span class="top ${entityStates.state}"><ha-icon class="icon" icon=${entityStates.state === "off" ? this.iconOff : this.iconOn}></ha-icon>${entityStates.state} ${this.displayState}</span>
+          <span class="top ${entityStates.state}"><ha-icon class="icon" icon=${entityStates.state === "off" ? this.iconOff : this.iconOn}></ha-icon>${entityStates.state =="not_home" ? "Away" : entityStates.state} ${entityStates.state !== "unavailable" ? this.displayState : '' }</span>
           <span class="middle">${name}</span>
           ${bottomText ? html`<span class="bottom">${bottomText}</span>`: ''}
           </div>
-          <input type="range" min="0" max="${entityStates.state !== "unavailable" ? this.rangeMax : "0" }" .value="${this.rangeValue}" 
+          <input type="range" min="0" max="${entityStates.state !== "unavailable" ? this.rangeMax : "0" }" .value="${this.rangeValue ? this.rangeValue : 0 }" 
             @pointerdown=${e => this._startCords(entity, e)}
             @pointerup=${e => this._endCords(entityStates, e)}
             @pointermove=${e => this._moveHandler(e)}
@@ -289,11 +296,11 @@ class DimmerButton extends LitElement {
   
   static get styles() {
     return css`
-        ha-card{
+        ha-card {
           background: none;
         }
 
-        .text{
+        .text {
           overflow: hidden;
           display: flex;
           flex-flow: column wrap;
@@ -302,21 +309,18 @@ class DimmerButton extends LitElement {
           width: 94%;
         }
 
-        span{
+        span {
           z-index: 1;
           pointer-events: none;
           text-transform: capitalize;
           margin: 0;
         }
 
-        span.off, span.paused, span.unavailable {
+        span.off, span.paused, span.unavailable, span.not_home, span.unknown, span.idle {
           color: var(--color-off);
         }
-        span.on, span.playing {
-          color: var(--color-on);
-        }
 
-        .icon{
+        .icon {
           margin-right: 10px;
           --mdc-icon-size: 30px;
           top: -3px;
@@ -332,6 +336,7 @@ class DimmerButton extends LitElement {
           padding-top: calc(var(--card-height) / 5);
           padding-right: 5%;
           margin-bottom: -20px;
+          color: var(--color-on);
         }
 
         .middle {
@@ -343,6 +348,7 @@ class DimmerButton extends LitElement {
           flex-grow: 1;
           padding-left: 1%;
           padding-top: calc(3px + calc(var(--card-height) / 5));
+          color: var(--color-text);
         }
 
         .bottom {
@@ -418,7 +424,7 @@ class DimmerButton extends LitElement {
           cursor: pointer;
         }
 
-        .active{
+        .active {
           -webkit-transform: scaleX(0.97) scaleY(0.95);
           -ms-transform: scaleX(0.97) scaleY(0.95);
           transform: scaleX(0.97) scaleY(0.95);
@@ -453,5 +459,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "dimmer-button",
   name: "Dimmer Button",
-  description: "Dimmable buttons in the style of Android 11’s quick access device controls"
+  description: "Dimmable buttons similar in style to the quick access device controls in later versions of Android"
 });
