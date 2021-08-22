@@ -7,13 +7,11 @@ The buttons support turning on/off as well as dimming, one tap toggles the devic
 
 ## Installation
 
-Download the .js file to configuration/www and add it to your configuration:
+Download dimmer-button.js file and place it in the folder configuration/www
+Then go to Configuration > Lovlace Dashobards > Resources > Add resource and enter "/local/dimmer-button.js"
 
-```yaml
-resources:
-  url: /local/dimmer-button.js
-  type: module
-```
+If you don't find the Resources option, make sure your user has been setup with Advanced mode.
+
 ## Configuration
 
 Most parts of the card can be changed in the configuration.
@@ -37,3 +35,7 @@ Most parts of the card can be changed in the configuration.
 | `on_icon`    | string | `entity icon if defined, otherwise depending on type`         | Set the icon to display when on                                           |
 | `off_icon`   | string | `entity icon if defined, otherwise depending on type` | Set the icon to display when off                                          |
 | `icon`       | string |                          | Use to set the same icon for on and off(Overrides setting on/off individually)                         |
+
+## Troubleshooting
+
+If you get an error on another device running Lovelace that the resource can't be found - reload the UI/app.
